@@ -19,7 +19,8 @@ cooperation.
 8. [OTA Protocol Reverse Engineering](#8-ota-protocol-reverse-engineering)
 9. [Building a Linux OTA Flasher](#9-building-a-linux-ota-flasher)
 10. [Verification & SignalRGB Integration](#10-verification--signalrgb-integration)
-11. [Lessons Learned](#11-lessons-learned)
+11. [Wireless & Bluetooth Investigation](#11-wireless--bluetooth-investigation)
+12. [Lessons Learned](#12-lessons-learned)
 
 ---
 
@@ -609,7 +610,82 @@ bus traffic.
 
 ---
 
-## 11. Lessons Learned
+## 11. Wireless & Bluetooth Investigation
+
+The keyboard supports three connection modes: USB wired, 2.4 GHz wireless
+(via a USB dongle), and Bluetooth. After confirming the firmware patch works
+over USB, the wireless and Bluetooth paths were investigated to determine
+whether VIA control is possible in those modes.
+
+### 2.4 GHz Wireless Dongle — Full VIA Support
+
+The dongle (VID `0x320F`, PID `0x5088`) presents itself as "Telink Wireless
+Gaming Keyboard" and exposes the same USB interface layout as the wired
+keyboard:
+
+| hidraw  | Interface | Usage Page | Report ID | Purpose              |
+|---------|-----------|------------|-----------|----------------------|
+| hidraw2 | 0         | `0x0001`   | none      | Standard keyboard HID |
+| hidraw3 | 1         | `0xFF60`   | none      | **VIA raw HID**      |
+| hidraw4 | 2         | `0xFF1C`   | 4         | Wireless mode control |
+| hidraw4 | 2         | `0xFFEF`   | 5         | Telink OTA flasher   |
+| hidraw4 | 2         | `0x0001`   | 6         | Mouse                |
+
+The VIA interface on the dongle is identical to the wired keyboard's: usage
+page `0xFF60`, 32-byte reports with no report ID. Testing confirmed that all
+VIA commands are transparently forwarded over the 2.4 GHz link:
+
+```
+GET protocol version → 11 (0x000B)  ✓
+GET brightness       → 9            ✓
+GET color            → H=18, S=255  ✓
+GET effect           → 6            ✓
+SET color H=170, S=255 → keyboard turns blue  ✓
+```
+
+The firmware patch (HSV→RGB code cave) works identically over wireless — the
+same firmware code path handles the VIA SET command regardless of whether it
+arrives via USB or the 2.4 GHz link.
+
+A **udev rule** for the dongle's PID (`0x5088`) was added to
+`99-wobkey-crush80.rules`, and a wireless SignalRGB plugin
+(`WobkeyCrush80Wireless.js`) was created targeting the dongle's PID.
+
+### Bluetooth — No VIA Support
+
+Over Bluetooth, the keyboard advertises as "Crush 80-1" with a different
+identity (VID `0x245A`, PID `0x8276`). The BLE HID profile exposes only
+standard reports:
+
+| Report ID | Usage Page | Type    | Purpose                      |
+|-----------|-----------|---------|------------------------------|
+| 1         | `0x0001`   | In/Out  | Standard keyboard            |
+| 2         | `0x000C`   | Input   | Consumer controls (media)    |
+| 3         | `0x0001`   | Input   | System power controls        |
+| 4         | `0x0001`   | Input   | Mouse                        |
+| 5         | `0xFF01`   | Feature | Vendor-specific (4 bytes)    |
+| 6         | `0x0007`   | Input   | Extended keyboard (NKRO)     |
+
+**No VIA interface** (`0xFF60`) is present. The only vendor-specific report
+is a 4-byte Feature on usage page `0xFF01` (Report ID 5), far too small to
+carry VIA protocol packets (which require 32 bytes). This report is likely
+used for battery level or pairing state.
+
+The absence of VIA over Bluetooth is typical — BLE HID has strict descriptor
+and bandwidth constraints, and most keyboard manufacturers strip vendor
+channels from the Bluetooth profile.
+
+### Connection Mode Summary
+
+| Connection              | VID:PID       | VIA Control | SignalRGB Plugin              |
+|-------------------------|---------------|-------------|-------------------------------|
+| USB wired               | `320F:5055`   | Full        | `WobkeyCrush80.js`           |
+| 2.4 GHz dongle          | `320F:5088`   | Full        | `WobkeyCrush80Wireless.js`   |
+| Bluetooth               | `245A:8276`   | None        | Not possible                  |
+
+---
+
+## 12. Lessons Learned
 
 ### Reverse Engineering Methodology
 
@@ -668,11 +744,12 @@ bus traffic.
 | `firmware_patched.bin`  | Patched firmware with hue fix                        |
 | `patch_firmware.py`     | Reproducible patch script (RISC-V encoders + CRC)    |
 | `flash_ota.py`          | Python OTA flasher for Linux (zero dependencies)      |
-| `SignalRGB/WobkeyCrush80.js` | SignalRGB plugin with color sync               |
+| `SignalRGB/WobkeyCrush80.js` | SignalRGB plugin — wired USB (PID 0x5055)      |
+| `SignalRGB/WobkeyCrush80Wireless.js` | SignalRGB plugin — 2.4G dongle (PID 0x5088) |
 | `SignalRGB/via-test.html`    | WebHID test app for interactive probing         |
 | `Ghidra*.java`          | Ghidra headless scripts for automated decompilation   |
 | `code_2M.bin`           | Original OTA image from .NET flasher                  |
 | `code_2M_patched.bin`   | Patched OTA image for .NET flasher                    |
 | `param_128K.bin`        | OTA parameters (report ID, VID/PID, unused AES key)   |
 | `decompiled/`           | ILSpy output of the .NET flasher                      |
-| `99-wobkey-crush80.rules` | udev rule for hidraw access                         |
+| `99-wobkey-crush80.rules` | udev rule for hidraw access (wired + dongle)        |

@@ -1,2 +1,4 @@
-# Wobkey Crush 80 - VID 0x320F PID 0x5055
+# Wobkey Crush 80 - VID 0x320F PID 0x5055 (wired)
 SUBSYSTEM=="hidraw", ATTRS{idVendor}=="320f", ATTRS{idProduct}=="5055", MODE="0660", GROUP="plugdev"
+# Wobkey Crush 80 - VID 0x320F PID 0x5088 (2.4G dongle)
+SUBSYSTEM=="hidraw", ATTRS{idVendor}=="320f", ATTRS{idProduct}=="5088", MODE="0660", GROUP="plugdev"

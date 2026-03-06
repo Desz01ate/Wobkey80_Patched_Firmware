@@ -5,15 +5,21 @@
 | Field | Value |
 |---|---|
 | Name | RDR Crush 80 |
-| VID | `0x320F` |
-| PID | `0x5055` |
 | MCU | Telink (TLSR-series, confirmed from OTA flasher internals) |
 | Firmware | Custom (not standard QMK) |
 | VIA Protocol Version | 11 (0x000B) |
 
+### Connection Modes
+
+| Mode | VID | PID | BT Name | VIA Support |
+|---|---|---|---|---|
+| USB wired | `0x320F` | `0x5055` | — | ✅ Full |
+| 2.4 GHz dongle | `0x320F` | `0x5088` | — | ✅ Full (forwarded) |
+| Bluetooth | `0x245A` | `0x8276` | Crush 80-1 | ❌ None |
+
 ---
 
-## USB Interfaces
+## USB Interfaces — Wired (VID 0x320F, PID 0x5055)
 
 | hidraw | Interface | Usage Page | Usage | What it is | Notes |
 |---|---|---|---|---|---|
@@ -21,6 +27,31 @@
 | hidraw3 | 1 | `0xFF60` | `0x61` | **VIA raw HID** | RGB control lives here |
 | hidraw4 | 2 | `0xFFEF` | — | Telink OTA firmware flasher | Report ID 5; don't use |
 | hidraw5 | 3 | `0xFF1C` | — | **Wireless mode switch** | Writing anything here immediately switches keyboard to 2.4G and disconnects from USB |
+
+## USB Interfaces — 2.4 GHz Dongle (VID 0x320F, PID 0x5088)
+
+| hidraw | Interface | Usage Page | Report ID | What it is | Notes |
+|---|---|---|---|---|---|
+| hidraw2 | 0 | `0x0001` | none | Standard keyboard HID | Forwarded keypresses |
+| hidraw3 | 1 | `0xFF60` | none | **VIA raw HID** | RGB control — identical to wired |
+| hidraw4 | 2 | `0xFF1C` | 4 | Wireless mode control | 63-byte reports |
+| hidraw4 | 2 | `0xFFEF` | 5 | Telink OTA flasher | Dongle firmware update |
+| hidraw4 | 2 | `0x0001` | 6 | Mouse | Shared interface |
+
+The dongle transparently forwards all VIA commands to the keyboard over the 2.4 GHz link. GET and SET operations work identically to the wired path, including the patched hue control.
+
+## Bluetooth HID Profile (VID 0x245A, PID 0x8276)
+
+| Report ID | Usage Page | Type | Purpose |
+|---|---|---|---|
+| 1 | `0x0001` / `0x0007` | In/Out | Standard keyboard |
+| 2 | `0x000C` | Input | Consumer controls (media keys) |
+| 3 | `0x0001` | Input | System power controls |
+| 4 | `0x0001` / `0x0009` | Input | Mouse |
+| 5 | `0xFF01` | Feature (4 bytes) | Vendor-specific (likely battery/pairing) |
+| 6 | `0x0007` | Input | Extended keyboard (NKRO) |
+
+**No VIA interface (`0xFF60`) is present over Bluetooth.** The only vendor report is a 4-byte Feature on `0xFF01`, far too small for VIA's 32-byte protocol. BLE HID bandwidth and descriptor constraints typically prevent keyboards from exposing vendor channels over Bluetooth.
 
 ---
 
@@ -137,16 +168,16 @@ These three bytes hold the last-known RGB values, likely updated only by the phy
 
 ## SignalRGB Plugin — What Is Achievable
 
-| Feature | Achievable? |
-|---|---|
-| Per-key RGB | ❌ Not exposed anywhere in firmware |
-| Solid single colour | ✅ Fixed — firmware patch enables H+S via VIA channel 3, ID 4 |
-| Effect selection | ✅ Via VIA channel 3, ID 2 |
-| Brightness sync | ✅ Via VIA channel 3, ID 1 (range 0–9) |
-| Speed control | ✅ Via VIA channel 3, ID 3 |
-| On/off with SignalRGB | ✅ Via brightness = 0 |
+| Feature | Wired USB | 2.4G Dongle | Bluetooth |
+|---|---|---|---|
+| Solid single colour | ✅ H+S via VIA ch3 ID4 | ✅ Same (forwarded) | ❌ No VIA |
+| Brightness sync | ✅ VIA ch3 ID1 (0–9) | ✅ Same | ❌ No VIA |
+| Effect selection | ✅ VIA ch3 ID2 (0–18) | ✅ Same | ❌ No VIA |
+| Speed control | ✅ VIA ch3 ID3 (0–4) | ✅ Same | ❌ No VIA |
+| On/off with SignalRGB | ✅ Brightness = 0 | ✅ Same | ❌ No VIA |
+| Per-key RGB | ❌ Not exposed | ❌ Not exposed | ❌ Not exposed |
 
-With the firmware patch applied, the SignalRGB plugin can now set solid colors via VIA channel 3, ID 4 (H, S). Per-key control is still not available (not exposed by firmware), but the keyboard can display any single color commanded by SignalRGB.
+With the firmware patch applied, the SignalRGB plugin can set solid colors via VIA channel 3, ID 4 (H, S) over both USB wired and 2.4G wireless. Bluetooth does not expose the VIA interface and cannot be used for RGB control.
 
 ### SignalRGB Plugin Implementation Notes
 
@@ -250,9 +281,10 @@ The .NET OTA flasher sends firmware in plaintext over USB HID (interface 0xFFEF,
 | `Crush80-RGB-USB.JSON` | VIA configuration (layout, keymap, channel map) |
 | `Crush80-RGB-Firmware.exe` | Telink USB OTA firmware flasher (.NET 4.0, decompilable) |
 | `decompiled/` | ILSpy decompile output of the firmware flasher |
-| `SignalRGB/WobkeyCrush80.js` | SignalRGB plugin — full color + brightness sync via patched firmware |
+| `SignalRGB/WobkeyCrush80.js` | SignalRGB plugin — wired USB (PID 0x5055) |
+| `SignalRGB/WobkeyCrush80Wireless.js` | SignalRGB plugin — 2.4G dongle (PID 0x5088) |
 | `SignalRGB/via-test.html` | WebHID test app used to probe the VIA interface |
-| `99-wobkey-crush80.rules` | udev rule granting plugdev access to hidraw nodes |
+| `99-wobkey-crush80.rules` | udev rule granting plugdev access (wired + dongle) |
 | `firmware.bin` | Extracted TLSR RISC-V firmware binary (121,332 bytes) |
 | `code_2M.bin` | Raw firmware image from OTA flasher resources |
 | `param_128K.bin` | OTA parameter file (AES key, VID/PID, interface config) |
