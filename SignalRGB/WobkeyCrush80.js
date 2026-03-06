@@ -25,10 +25,25 @@ export function VendorId()    { return 0x320F; }
 export function ProductId()   { return 0x5055; }
 export function Publisher()   { return "Community"; }
 
-export function Size()          { return [1, 1]; }
+// Canvas grid: 22x7 with LEDs spread across it so SignalRGB's effect engine
+// has positions to render onto. We average all LED colors into one value
+// since the keyboard only supports a single whole-board color.
+const COLS = 22;
+const ROWS = 7;
+
+let vLedNames = [];
+let vLedPositions = [];
+for (let y = 0; y < ROWS; y++) {
+    for (let x = 0; x < COLS; x++) {
+        vLedNames.push(`Key ${y * COLS + x}`);
+        vLedPositions.push([x, y]);
+    }
+}
+
+export function Size()          { return [COLS, ROWS]; }
 export function DefaultLayout() { return "Default"; }
-export function LedNames()      { return ["Keyboard"]; }
-export function LedPositions()  { return [[0, 0]]; }
+export function LedNames()      { return vLedNames; }
+export function LedPositions()  { return vLedPositions; }
 
 // ---------------------------------------------------------------------------
 // Endpoint selection
@@ -80,14 +95,25 @@ export function Initialize() {
 }
 
 export function Render() {
-    let c = device.color(0, 0);
-    let r = (c >> 16) & 0xFF;
-    let g = (c >>  8) & 0xFF;
-    let b =  c        & 0xFF;
+    // Average all LED positions on the canvas into a single RGB value.
+    // device.color(x, y) returns [R, G, B] array.
+    let totalR = 0, totalG = 0, totalB = 0;
+    let count = COLS * ROWS;
+
+    for (let y = 0; y < ROWS; y++) {
+        for (let x = 0; x < COLS; x++) {
+            let c = device.color(x, y);
+            totalR += c[0];
+            totalG += c[1];
+            totalB += c[2];
+        }
+    }
+
+    let r = Math.round(totalR / count);
+    let g = Math.round(totalG / count);
+    let b = Math.round(totalB / count);
 
     let [h, s, v] = rgbToHsv(r, g, b);
-
-    // Map V to the firmware's coarse 0–9 brightness range
     let brightness = Math.round((v / 255) * MAX_BRIGHTNESS);
 
     if (h !== lastH || s !== lastS) {
@@ -135,9 +161,12 @@ function rgbToHsv(r, g, b) {
 // ---------------------------------------------------------------------------
 
 function sendVIA(data) {
-    let buf = new Array(VIA_REPORT_SIZE).fill(0x00);
+    // SignalRGB device.write() uses Windows HID API which requires report ID
+    // as the first byte. VIA interface has no report ID, so prepend 0x00.
+    let buf = new Array(1 + VIA_REPORT_SIZE).fill(0x00);
+    buf[0] = 0x00;  // report ID (none)
     for (let i = 0; i < data.length && i < VIA_REPORT_SIZE; i++) {
-        buf[i] = data[i];
+        buf[i + 1] = data[i];
     }
-    device.write(buf);
+    device.write(buf, buf.length);
 }

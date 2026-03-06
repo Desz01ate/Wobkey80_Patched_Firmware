@@ -148,6 +148,19 @@ These three bytes hold the last-known RGB values, likely updated only by the phy
 
 With the firmware patch applied, the SignalRGB plugin can now set solid colors via VIA channel 3, ID 4 (H, S). Per-key control is still not available (not exposed by firmware), but the keyboard can display any single color commanded by SignalRGB.
 
+### SignalRGB Plugin Implementation Notes
+
+The plugin (`SignalRGB/WobkeyCrush80.js`) required several non-obvious fixes to work:
+
+| Issue | Root Cause | Fix |
+|---|---|---|
+| Canvas returns all black | Single-LED layout causes SignalRGB rendering engine to skip device | Define a 22×7 grid (154 LEDs) so the effect engine has positions to render onto |
+| `device.color(x, y)` returns 0 | Return value is `[R, G, B]` array, not packed integer | Access as `c[0]`, `c[1]`, `c[2]` instead of bit-shifting |
+| VIA writes ignored | Windows HID API requires report ID as first byte | Prepend `0x00` (no report ID) to every `device.write()` call |
+| "Unknown plugin type" error | `Type()` export returning `"keyboard"` | Remove `Type()` export entirely — SignalRGB infers it |
+
+**How it works:** On each frame, the plugin averages all 154 LED positions from the SignalRGB canvas into a single RGB value, converts to HSV (H and S in 0–255 QMK convention), and sends H+S via VIA channel 3 ID 4. Brightness is mapped from V (0–255) to the keyboard's 0–9 range via channel 3 ID 1. Values are only sent when they change to minimize USB traffic. On initialize, the plugin switches the keyboard to solid-colour mode (Effect 6). On shutdown, brightness is restored to maximum.
+
 ---
 
 ## Potential Workarounds
@@ -237,7 +250,7 @@ The .NET OTA flasher sends firmware in plaintext over USB HID (interface 0xFFEF,
 | `Crush80-RGB-USB.JSON` | VIA configuration (layout, keymap, channel map) |
 | `Crush80-RGB-Firmware.exe` | Telink USB OTA firmware flasher (.NET 4.0, decompilable) |
 | `decompiled/` | ILSpy decompile output of the firmware flasher |
-| `SignalRGB/WobkeyCrush80.js` | SignalRGB plugin — brightness sync |
+| `SignalRGB/WobkeyCrush80.js` | SignalRGB plugin — full color + brightness sync via patched firmware |
 | `SignalRGB/via-test.html` | WebHID test app used to probe the VIA interface |
 | `99-wobkey-crush80.rules` | udev rule granting plugdev access to hidraw nodes |
 | `firmware.bin` | Extracted TLSR RISC-V firmware binary (121,332 bytes) |
@@ -252,6 +265,7 @@ The .NET OTA flasher sends firmware in plaintext over USB HID (interface 0xFFEF,
 | `GhidraVIA.java` | Ghidra script — targeted VIA area analysis |
 | `GhidraHSV.java` | Ghidra script — full C000-E000 decompilation |
 | `patch_firmware.py` | Reproducible firmware patch script |
-| `flash_ota.py` | Python OTA flasher (replaces .NET flasher, Linux hidraw) |
+| `detail.md` | Comprehensive technical write-up of the full reverse engineering process |
+| `flash_ota.py` | Python OTA flasher (replaces .NET flasher, Linux hidraw, Report ID 5) |
 | `firmware_patched.bin` | Patched firmware with hue fix (flashed & verified working) |
 | `code_2M_patched.bin` | Patched OTA image for .NET flasher |
