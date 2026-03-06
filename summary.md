@@ -140,19 +140,19 @@ These three bytes hold the last-known RGB values, likely updated only by the phy
 | Feature | Achievable? |
 |---|---|
 | Per-key RGB | ❌ Not exposed anywhere in firmware |
-| Solid single colour | ❌ No USB path to hue register |
+| Solid single colour | ✅ Fixed — firmware patch enables H+S via VIA channel 3, ID 4 |
 | Effect selection | ✅ Via VIA channel 3, ID 2 |
 | Brightness sync | ✅ Via VIA channel 3, ID 1 (range 0–9) |
 | Speed control | ✅ Via VIA channel 3, ID 3 |
 | On/off with SignalRGB | ✅ Via brightness = 0 |
 
-The delivered plugin (`WobkeyCrush80.js`) syncs brightness only: it maps the max channel value of the SignalRGB canvas colour to the firmware's 0–9 brightness range. The keyboard keeps whatever animation/effect was last set in VIA.
+With the firmware patch applied, the SignalRGB plugin can now set solid colors via VIA channel 3, ID 4 (H, S). Per-key control is still not available (not exposed by firmware), but the keyboard can display any single color commanded by SignalRGB.
 
 ---
 
 ## Potential Workarounds
 
-### 1. Firmware Binary Patch (IMPLEMENTED)
+### 1. Firmware Binary Patch (IMPLEMENTED & VERIFIED)
 
 The VIA color handler at `0xDA4E` originally jumps to `0xD8D0` (the keypress color store routine) with register `a4` pointing to stale RGB globals at `0x2001BAAF`. The patch redirects this jump through a code cave at `0x10A4` that converts the H byte (in `a2`) to RGB using a 6-sector color wheel algorithm, writes the result to `0x2001BAAF-B1` (updating the stale cache), then continues to `0xD8D0` as normal.
 
@@ -166,7 +166,9 @@ The VIA color handler at `0xDA4E` originally jumps to `0xD8D0` (the keypress col
 - `code_2M_patched.bin` — patched OTA image (replace in flasher's .resx resources)
 - `patch_firmware.py` — reproducible patch script
 
-**To flash:** Replace the `code_2M` resource in the .NET OTA flasher with `code_2M_patched.bin` and run the flasher. If the OTA protocol uses AES encryption (key at `param_128K.bin` offset 0x30), this step may need additional reverse engineering of the flasher's upload logic.
+**To flash:** Replace the `code_2M` resource in the .NET OTA flasher with `code_2M_patched.bin` and run the flasher.
+
+**OTA encryption: None.** The `enc_key[16]` field loaded from `param_128K.bin` is a dead variable — assigned but never used. Firmware data is sent as plaintext 16-byte blocks with CRC16 integrity checks. The only host-side validation is `bin_crc != 0 && bin_crc != 0xFFFFFFFF`, which the patched firmware passes.
 
 **Risk:** Low — the OTA bootloader is separate from the application firmware. If the patched firmware crashes, the bootloader should still present the OTA USB interface for recovery with the original `code_2M.bin`.
 
@@ -181,6 +183,23 @@ If there's a way to inject `RGB_HUI`/`RGB_HUD` keypress events via the VIA `dyna
 ### 4. Custom QMK Firmware
 
 The MCU is Telink (TLSR-series, RISC-V), not the typical STM32/AVR. A Telink-compatible QMK port would need to expose per-key LED control. Non-trivial but would give full control.
+
+## OTA Protocol (No Encryption)
+
+The .NET OTA flasher sends firmware in plaintext over USB HID (interface 0xFFEF, report_id=6).
+
+| Phase | Packet | Description |
+|---|---|---|
+| Start | `[02][02][00][01][FF]` | Handshake / begin OTA |
+| Data | 3× `[idx_lo][idx_hi][16B data][crc16_lo][crc16_hi]` | 20-byte chunks, 3 per packet |
+| End | `[02][06][00][02][FF][cnt_lo][cnt_hi][~cnt_lo][~cnt_hi]` | Total chunk count + complement |
+
+- `enc_key[16]` from `param_128K.bin` offset 0x30 is loaded but **never used** — dead code
+- CRC16 uses polynomial 0xA001 (standard Telink OTA)
+- Host validation: `bin_crc != 0 && bin_crc != 0xFFFFFFFF` only
+- Device validation: likely CRC32 check on received firmware header
+
+---
 
 ## Firmware Extraction Details
 
@@ -233,5 +252,6 @@ The MCU is Telink (TLSR-series, RISC-V), not the typical STM32/AVR. A Telink-com
 | `GhidraVIA.java` | Ghidra script — targeted VIA area analysis |
 | `GhidraHSV.java` | Ghidra script — full C000-E000 decompilation |
 | `patch_firmware.py` | Reproducible firmware patch script |
-| `firmware_patched.bin` | Patched firmware with hue fix |
-| `code_2M_patched.bin` | Patched OTA image for flasher |
+| `flash_ota.py` | Python OTA flasher (replaces .NET flasher, Linux hidraw) |
+| `firmware_patched.bin` | Patched firmware with hue fix (flashed & verified working) |
+| `code_2M_patched.bin` | Patched OTA image for .NET flasher |
