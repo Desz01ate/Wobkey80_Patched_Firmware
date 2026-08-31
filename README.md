@@ -87,15 +87,22 @@ python3 flash_ota.py --device /dev/hidraw4 ../firmware/firmware_patched.bin
 python3 flash_ota.py --probe
 ```
 
-### Alternative: Flash via the Windows OTA flasher
+### Flash via the Windows installer
 
-The stock flasher (`Crush80-RGB-Firmware.exe`) is a .NET WinForms app that embeds the firmware as a resource. To flash the patched version on Windows:
+`installer/Crush80FirmwareInstaller` contains a WPF installer targeting .NET 10 on Windows. It auto-detects the OTA HID interface by VID, PID, and usage page, validates the selected firmware, then performs the same response-driven Telink OTA transfer as `flash_ota.py`.
 
-1. Open `Crush80-RGB-Firmware.exe` in [dnSpy](https://github.com/dnSpyEx/dnSpy)
-2. Navigate to **Resources** > `WindowsFormsApplication1.Properties.Resources`
-3. Right-click the `code_2M` resource > **Edit Resource** > select `code_2M_patched.bin`
-4. Save the modified executable
-5. Run it and follow the on-screen instructions
+```powershell
+cd installer/Crush80FirmwareInstaller
+dotnet run --project Crush80FirmwareInstaller
+```
+
+The output directory contains `firmware-catalog.json` and a `firmware/` folder beside the executable. Firmware releases are external data, not embedded resources. To ship a newer patched binary without recompiling:
+
+1. Copy the `.bin` file into the output `firmware/` folder.
+2. Add or update its entry in `firmware-catalog.json` with `name`, `version`, `file`, target device ID, and optional SHA-256.
+3. Restart the installer or click **Reload catalog**.
+
+Device targets in the same JSON file configure VID, PID, HID usage page, report ID, and OTA timeouts. The supplied catalog selects wired Crush 80 devices at `320F:5055`, usage page `0xFFEF`, report ID `5`, and offers patched firmware versions 1.06 and 1.04.
 
 > **Warning:** Flashing custom firmware carries risk. Keep a copy of the original `firmware.bin` and `code_2M.bin` so you can restore stock firmware if needed. The OTA bootloader should remain intact even after a failed flash, allowing recovery.
 
