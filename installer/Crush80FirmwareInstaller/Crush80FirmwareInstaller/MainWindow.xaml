@@ -3,9 +3,10 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Crush80FirmwareInstaller"
         mc:Ignorable="d"
-        Title="Wobkey Crush 80 Firmware Installer"
-        Width="980" Height="720" MinWidth="860" MinHeight="620"
+        Title="Wobkey Crush 80 Toolbox"
+        Width="1040" Height="780" MinWidth="900" MinHeight="660"
         WindowStartupLocation="CenterScreen"
         Background="#F4F6FA"
         FontFamily="Segoe UI"
@@ -15,9 +16,12 @@
         <SolidColorBrush x:Key="MutedBrush" Color="#64748B" />
         <SolidColorBrush x:Key="AccentBrush" Color="#3157D5" />
         <SolidColorBrush x:Key="AccentHoverBrush" Color="#2446B8" />
+        <SolidColorBrush x:Key="CardBorderBrush" Color="#E2E8F0" />
+
         <Style TargetType="Button">
-            <Setter Property="Padding" Value="18,10" />
+            <Setter Property="Padding" Value="16,9" />
             <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="FontSize" Value="13" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="Template">
@@ -38,6 +42,7 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
         <Style x:Key="PrimaryButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
             <Setter Property="Background" Value="{StaticResource AccentBrush}" />
             <Setter Property="Foreground" Value="White" />
@@ -46,13 +51,51 @@
             <Setter Property="Background" Value="#E8ECF5" />
             <Setter Property="Foreground" Value="{StaticResource InkBrush}" />
         </Style>
+        <Style x:Key="SuccessButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Background" Value="#16A34A" />
+            <Setter Property="Foreground" Value="White" />
+        </Style>
+        <Style x:Key="DangerOutlineButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Background" Value="#FEE2E2" />
+            <Setter Property="Foreground" Value="#991B1B" />
+        </Style>
+
+        <Style x:Key="NavTabButton" TargetType="RadioButton">
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="#94A3B8" />
+            <Setter Property="Padding" Value="18,10" />
+            <Setter Property="Margin" Value="0,0,6,0" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="TabBorder" Background="Transparent" CornerRadius="8" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="TabBorder" Property="Background" Value="#1E293B" />
+                                <Setter Property="Foreground" Value="#F1F5F9" />
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="TabBorder" Property="Background" Value="{StaticResource AccentBrush}" />
+                                <Setter Property="Foreground" Value="White" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <Style x:Key="Card" TargetType="Border">
             <Setter Property="Background" Value="White" />
-            <Setter Property="BorderBrush" Value="#E2E8F0" />
+            <Setter Property="BorderBrush" Value="{StaticResource CardBorderBrush}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="CornerRadius" Value="12" />
             <Setter Property="Padding" Value="22" />
         </Style>
+
         <Style TargetType="TextBlock">
             <Setter Property="Foreground" Value="{StaticResource InkBrush}" />
         </Style>
@@ -65,106 +108,381 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <Border Grid.Row="0" Background="#101B30" Padding="34,24">
+        <!-- Top Header Navigation -->
+        <Border Grid.Row="0" Background="#101B30" Padding="32,20,32,16">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <!-- Top row: App title and actions -->
+                <Grid Grid.Row="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock x:Name="ProductNameTextBlock" Text="Wobkey Crush 80 Firmware &amp; SignalRGB Toolbox" Foreground="White" FontSize="24" FontWeight="SemiBold" />
+                        <TextBlock x:Name="SubtitleTextBlock" Text="Firmware OTA flasher and SignalRGB custom plugin manager" Foreground="#AFC0E8" FontSize="13" Margin="0,4,0,0" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button x:Name="OpenFolderButton" Style="{StaticResource SecondaryButton}" Content="Open app folder" Click="OpenFolderButton_Click" Margin="0,0,10,0" />
+                        <Button x:Name="ReloadButton" Style="{StaticResource SecondaryButton}" Content="Reload catalog" Click="ReloadButton_Click" />
+                    </StackPanel>
+                </Grid>
+
+                <!-- Bottom row: Navigation Tabs -->
+                <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,16,0,0">
+                    <RadioButton x:Name="FirmwareNavTab" GroupName="NavTabs" Content="Firmware Installation" Style="{StaticResource NavTabButton}" IsChecked="True" Checked="NavTab_Checked" />
+                    <RadioButton x:Name="SignalRgbNavTab" GroupName="NavTabs" Content="SignalRGB Plugin Management" Style="{StaticResource NavTabButton}" Checked="NavTab_Checked" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Main Content Area -->
+        <Grid Grid.Row="1">
+            <!-- PAGE 1: Firmware Installation -->
+            <ScrollViewer x:Name="FirmwarePage" VerticalScrollBarVisibility="Auto" Visibility="Visible">
+                <Grid Margin="30,24">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="1.25*" />
+                        <ColumnDefinition Width="18" />
+                        <ColumnDefinition Width="0.9*" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Left Column: Firmware Selection & Flashing -->
+                    <StackPanel Grid.Column="0">
+                        <Border Style="{StaticResource Card}" Margin="0,0,0,18">
+                            <StackPanel>
+                                <TextBlock Text="1  Choose firmware" FontSize="18" FontWeight="SemiBold" />
+                                <TextBlock Text="Releases are loaded from firmware-catalog.json beside the app." Foreground="{StaticResource MutedBrush}" Margin="0,5,0,16" />
+                                <ComboBox x:Name="FirmwareComboBox" Height="42" Padding="10,5" DisplayMemberPath="DisplayName" SelectionChanged="FirmwareComboBox_SelectionChanged" />
+                                <TextBlock x:Name="FirmwareDescriptionTextBlock" TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" Margin="0,14,0,16" />
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
+                                    </Grid.RowDefinitions>
+                                    <TextBlock Text="Format" Foreground="{StaticResource MutedBrush}" Margin="0,3,22,3" />
+                                    <TextBlock x:Name="FormatTextBlock" Grid.Column="1" Margin="0,3" />
+                                    <TextBlock Grid.Row="1" Text="Payload" Foreground="{StaticResource MutedBrush}" Margin="0,3,22,3" />
+                                    <TextBlock x:Name="SizeTextBlock" Grid.Row="1" Grid.Column="1" Margin="0,3" />
+                                    <TextBlock Grid.Row="2" Text="Integrity" Foreground="{StaticResource MutedBrush}" Margin="0,3,22,3" />
+                                    <TextBlock x:Name="IntegrityTextBlock" Grid.Row="2" Grid.Column="1" Margin="0,3" />
+                                    <TextBlock Grid.Row="3" Text="File" Foreground="{StaticResource MutedBrush}" Margin="0,3,22,3" />
+                                    <TextBlock x:Name="FileTextBlock" Grid.Row="3" Grid.Column="1" TextTrimming="CharacterEllipsis" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" Margin="0,3" />
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Text="3  Install update" FontSize="18" FontWeight="SemiBold" />
+                                <TextBlock x:Name="SupportMessageTextBlock" TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" Margin="0,5,0,14" />
+                                <CheckBox x:Name="ConfirmationCheckBox" Content="I understand that interrupting a firmware update may require recovery." Click="ConfirmationCheckBox_Click" Margin="0,0,0,16" />
+                                <ProgressBar x:Name="FlashProgressBar" Height="10" Minimum="0" Maximum="100" Value="0" Foreground="{StaticResource AccentBrush}" Background="#E8ECF5" />
+                                <Grid Margin="0,8,0,18">
+                                    <TextBlock x:Name="ProgressStatusTextBlock" Text="Ready" Foreground="{StaticResource MutedBrush}" />
+                                    <TextBlock x:Name="ProgressPercentTextBlock" Text="0%" HorizontalAlignment="Right" FontWeight="SemiBold" />
+                                </Grid>
+                                <StackPanel Orientation="Horizontal">
+                                    <Button x:Name="FlashButton" Style="{StaticResource PrimaryButton}" Content="Install firmware" Click="FlashButton_Click" IsEnabled="False" MinWidth="160" />
+                                    <Button x:Name="CancelButton" Style="{StaticResource SecondaryButton}" Content="Cancel" Click="CancelButton_Click" Visibility="Collapsed" Margin="10,0,0,0" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- Right Column: Device Status & Firmware Log -->
+                    <StackPanel Grid.Column="2">
+                        <Border Style="{StaticResource Card}" Margin="0,0,0,18">
+                            <StackPanel>
+                                <TextBlock Text="2  Connect keyboard" FontSize="18" FontWeight="SemiBold" />
+                                <TextBlock Text="The OTA interface is matched by VID, PID, and HID usage page." Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" Margin="0,5,0,18" />
+                                <Border x:Name="DeviceStatusBorder" Background="#FFF5E6" BorderBrush="#FED7AA" BorderThickness="1" CornerRadius="8" Padding="14">
+                                    <StackPanel>
+                                        <TextBlock x:Name="DeviceStatusTextBlock" Text="Searching for keyboard…" FontWeight="SemiBold" />
+                                        <TextBlock x:Name="DeviceDetailsTextBlock" Text="Connect with a USB cable." TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" Margin="0,4,0,0" />
+                                    </StackPanel>
+                                </Border>
+                                <Button x:Name="RefreshButton" Style="{StaticResource SecondaryButton}" Content="Refresh device" Click="RefreshButton_Click" Margin="0,14,0,0" HorizontalAlignment="Left" />
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Text="Activity" FontSize="18" FontWeight="SemiBold" />
+                                <TextBox x:Name="LogTextBox" Margin="0,12,0,0" Height="235" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" BorderThickness="0" Background="#F7F9FC" Padding="12" FontFamily="Consolas" FontSize="12" Foreground="#334155" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Grid>
+            </ScrollViewer>
+
+            <!-- PAGE 2: SignalRGB Plugin Management -->
+            <ScrollViewer x:Name="SignalRgbPage" VerticalScrollBarVisibility="Auto" Visibility="Collapsed">
+                <Grid Margin="30,24">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="1.25*" />
+                        <ColumnDefinition Width="18" />
+                        <ColumnDefinition Width="0.9*" />
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Left Column: SignalRGB Path & Plugin List -->
+                    <StackPanel Grid.Column="0">
+                        <!-- SignalRGB Environment & Target Path Card -->
+                        <Border Style="{StaticResource Card}" Margin="0,0,0,18">
+                            <StackPanel>
+                                <TextBlock Text="SignalRGB Environment" FontSize="18" FontWeight="SemiBold" />
+                                <TextBlock Text="Custom user plugins are installed into the SignalRGB WhirlwindFX Plugins folder." Foreground="{StaticResource MutedBrush}" Margin="0,4,0,16" />
+
+                                <!-- Status Badges Row -->
+                                <Grid Margin="0,0,0,14">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="12" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+
+                                    <!-- Folder Detection Badge -->
+                                    <Border x:Name="PluginsFolderStatusBorder" Grid.Column="0" Background="#F0FDF4" BorderBrush="#BBF7D0" BorderThickness="1" CornerRadius="8" Padding="12,10">
+                                        <StackPanel>
+                                            <TextBlock Text="Plugins Folder" FontSize="12" Foreground="{StaticResource MutedBrush}" />
+                                            <TextBlock x:Name="PluginsFolderStatusTextBlock" Text="Detected" FontWeight="SemiBold" Foreground="#15803D" Margin="0,2,0,0" />
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- SignalRGB App Running Status Badge -->
+                                    <Border x:Name="SignalRgbProcessStatusBorder" Grid.Column="2" Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8" Padding="12,10">
+                                        <StackPanel>
+                                            <TextBlock Text="SignalRGB App Status" FontSize="12" Foreground="{StaticResource MutedBrush}" />
+                                            <TextBlock x:Name="SignalRgbProcessStatusTextBlock" Text="Checking…" FontWeight="SemiBold" Foreground="#475569" Margin="0,2,0,0" />
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+
+                                <!-- Folder Path Display -->
+                                <TextBlock Text="Target Directory" FontSize="12" FontWeight="SemiBold" Foreground="{StaticResource MutedBrush}" Margin="0,0,0,4" />
+                                <Grid Margin="0,0,0,12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox x:Name="PluginsFolderTextBox" Height="36" Padding="10,8" IsReadOnly="True" Background="#F8FAFC" BorderBrush="#CBD5E1" VerticalContentAlignment="Center" />
+                                    <Button Grid.Column="1" Style="{StaticResource SecondaryButton}" Content="Browse…" Click="BrowsePluginFolderButton_Click" Margin="8,0,0,0" Height="36" Padding="14,0" />
+                                </Grid>
+
+                                <!-- Directory Actions -->
+                                <WrapPanel Margin="0,4,0,0">
+                                    <Button x:Name="OpenPluginsFolderButton" Style="{StaticResource SecondaryButton}" Content="Open plugins folder" Click="OpenPluginsFolderButton_Click" Margin="0,0,8,8" />
+                                    <Button x:Name="ResetPluginFolderButton" Style="{StaticResource SecondaryButton}" Content="Reset to default" Click="ResetPluginFolderButton_Click" Margin="0,0,8,8" />
+                                    <Button x:Name="RestartSignalRgbButton" Style="{StaticResource SecondaryButton}" Content="Restart SignalRGB" Click="RestartSignalRgbButton_Click" Margin="0,0,8,8" />
+                                    <Button x:Name="RefreshSignalRgbButton" Style="{StaticResource SecondaryButton}" Content="Refresh status" Click="RefreshSignalRgbButton_Click" Margin="0,0,8,8" />
+                                </WrapPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Available Plugins List Card -->
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <Grid Margin="0,0,0,14">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock Text="Available Plugins" FontSize="18" FontWeight="SemiBold" />
+                                        <TextBlock Text="Install or update patched Wobkey Crush 80 plugins for SignalRGB." Foreground="{StaticResource MutedBrush}" Margin="0,3,0,0" />
+                                    </StackPanel>
+                                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <Button x:Name="InstallRecommendedButton" Style="{StaticResource SuccessButton}" Content="Install Recommended (V2)" Click="InstallRecommendedButton_Click" Margin="0,0,8,0" />
+                                        <Button x:Name="UninstallAllButton" Style="{StaticResource DangerOutlineButton}" Content="Uninstall All" Click="UninstallAllButton_Click" />
+                                    </StackPanel>
+                                </Grid>
+
+                                <!-- ItemsControl for plugins -->
+                                <ItemsControl x:Name="PluginsItemsControl">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate DataType="{x:Type local:SignalRgbPluginViewModel}">
+                                            <Border BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="10" Padding="16" Margin="0,0,0,12" Background="#FAFAFA">
+                                                <Grid>
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="Auto" />
+                                                        <RowDefinition Height="Auto" />
+                                                        <RowDefinition Height="Auto" />
+                                                        <RowDefinition Height="Auto" />
+                                                    </Grid.RowDefinitions>
+
+                                                    <!-- Header: Title, Version, Badges -->
+                                                    <Grid Grid.Row="0">
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*" />
+                                                            <ColumnDefinition Width="Auto" />
+                                                        </Grid.ColumnDefinitions>
+                                                        <WrapPanel VerticalAlignment="Center">
+                                                            <TextBlock Text="{Binding Plugin.Name}" FontSize="15" FontWeight="SemiBold" Margin="0,0,10,0" />
+                                                            <Border Background="#E0E7FF" CornerRadius="4" Padding="6,2" Margin="0,0,6,0" VerticalAlignment="Center">
+                                                                <TextBlock Text="{Binding Plugin.Version, StringFormat='v{0}'}" FontSize="11" FontWeight="SemiBold" Foreground="#3730A3" />
+                                                            </Border>
+                                                            <Border Background="#DCFCE7" CornerRadius="4" Padding="6,2" Margin="0,0,6,0" VerticalAlignment="Center" Visibility="{Binding Plugin.Recommended, Converter={x:Static local:BooleanToVisibilityConverter.Instance}}">
+                                                                <TextBlock Text="RECOMMENDED" FontSize="10" FontWeight="Bold" Foreground="#15803D" />
+                                                            </Border>
+                                                            <Border Background="#F1F5F9" CornerRadius="4" Padding="6,2" VerticalAlignment="Center">
+                                                                <TextBlock Text="{Binding Plugin.TargetMode}" FontSize="11" Foreground="#475569" />
+                                                            </Border>
+                                                        </WrapPanel>
+
+                                                        <!-- Status Pill -->
+                                                        <Border Grid.Column="1" CornerRadius="6" Padding="8,4" VerticalAlignment="Center">
+                                                            <Border.Style>
+                                                                <Style TargetType="Border">
+                                                                    <Style.Triggers>
+                                                                        <DataTrigger Binding="{Binding State}" Value="Installed">
+                                                                            <Setter Property="Background" Value="#DCFCE7" />
+                                                                        </DataTrigger>
+                                                                        <DataTrigger Binding="{Binding State}" Value="UpdateAvailable">
+                                                                            <Setter Property="Background" Value="#FEF3C7" />
+                                                                        </DataTrigger>
+                                                                        <DataTrigger Binding="{Binding State}" Value="NotInstalled">
+                                                                            <Setter Property="Background" Value="#F1F5F9" />
+                                                                        </DataTrigger>
+                                                                        <DataTrigger Binding="{Binding State}" Value="MissingSource">
+                                                                            <Setter Property="Background" Value="#FEE2E2" />
+                                                                        </DataTrigger>
+                                                                    </Style.Triggers>
+                                                                </Style>
+                                                            </Border.Style>
+                                                            <TextBlock Text="{Binding StatusText}" FontSize="12" FontWeight="SemiBold">
+                                                                <TextBlock.Style>
+                                                                    <Style TargetType="TextBlock">
+                                                                        <Style.Triggers>
+                                                                            <DataTrigger Binding="{Binding State}" Value="Installed">
+                                                                                <Setter Property="Foreground" Value="#15803D" />
+                                                                            </DataTrigger>
+                                                                            <DataTrigger Binding="{Binding State}" Value="UpdateAvailable">
+                                                                                <Setter Property="Foreground" Value="#B45309" />
+                                                                            </DataTrigger>
+                                                                            <DataTrigger Binding="{Binding State}" Value="NotInstalled">
+                                                                                <Setter Property="Foreground" Value="#64748B" />
+                                                                            </DataTrigger>
+                                                                            <DataTrigger Binding="{Binding State}" Value="MissingSource">
+                                                                                <Setter Property="Foreground" Value="#991B1B" />
+                                                                            </DataTrigger>
+                                                                        </Style.Triggers>
+                                                                    </Style>
+                                                                </TextBlock.Style>
+                                                            </TextBlock>
+                                                        </Border>
+                                                    </Grid>
+
+                                                    <!-- Description -->
+                                                    <TextBlock Grid.Row="1" Text="{Binding Plugin.Description}" TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" Margin="0,8,0,8" FontSize="12" />
+
+                                                    <!-- File Info -->
+                                                    <TextBlock Grid.Row="2" FontSize="11" Foreground="#94A3B8" Margin="0,0,0,10">
+                                                        <Run Text="Destination: " /><Run Text="{Binding Plugin.EffectiveDestinationFile, Mode=OneWay}" FontWeight="SemiBold" /><Run Text="  •  Installed file: " /><Run Text="{Binding InstalledFileSizeFormatted, Mode=OneWay}" /><Run Text=" (" /><Run Text="{Binding InstalledDateFormatted, Mode=OneWay}" /><Run Text=")" />
+                                                    </TextBlock>
+
+                                                    <!-- Action buttons -->
+                                                    <StackPanel Grid.Row="3" Orientation="Horizontal">
+                                                        <Button Style="{StaticResource PrimaryButton}" Content="{Binding ActionText}" Click="PluginInstallButton_Click" Tag="{Binding}" IsEnabled="{Binding CanInstall}" Padding="14,6" FontSize="12" Margin="0,0,8,0" />
+                                                        <Button Style="{StaticResource DangerOutlineButton}" Content="Uninstall" Click="PluginUninstallButton_Click" Tag="{Binding}" IsEnabled="{Binding CanUninstall}" Padding="14,6" FontSize="12" Margin="0,0,8,0" />
+                                                    </StackPanel>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- Right Column: Installed Files & Guide & Log -->
+                    <StackPanel Grid.Column="2">
+                        <!-- Setup Notes & Recommendations Card -->
+                        <Border Style="{StaticResource Card}" Margin="0,0,0,18">
+                            <StackPanel>
+                                <TextBlock Text="Quick Guide" FontSize="18" FontWeight="SemiBold" />
+                                <StackPanel Margin="0,10,0,0">
+                                    <TextBlock Text="1. Patched Firmware Required" FontWeight="SemiBold" FontSize="13" />
+                                    <TextBlock Text="Make sure you have flashed the patched firmware (Page 1). The stock firmware has a bug where the VIA hue byte is ignored." TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" FontSize="12" Margin="0,2,0,10" />
+
+                                    <TextBlock Text="2. V2 vs V1 Plugins" FontWeight="SemiBold" FontSize="13" />
+                                    <TextBlock Text="V2 is recommended: it pushes color/hue without overriding the active effect mode. V1 locks the keyboard into a solid static color." TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" FontSize="12" Margin="0,2,0,10" />
+
+                                    <TextBlock Text="3. Applying Changes" FontWeight="SemiBold" FontSize="13" />
+                                    <TextBlock Text="SignalRGB loads plugins when it starts up. Click 'Restart SignalRGB' or restart the app manually to load new plugins." TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" FontSize="12" Margin="0,2,0,0" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Currently Installed Files in Plugins Directory -->
+                        <Border Style="{StaticResource Card}" Margin="0,0,0,18">
+                            <StackPanel>
+                                <Grid Margin="0,0,0,10">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Installed Plugins Folder" FontSize="18" FontWeight="SemiBold" />
+                                    <TextBlock x:Name="InstalledCountTextBlock" Grid.Column="1" Text="0 file(s)" Foreground="{StaticResource MutedBrush}" FontSize="12" VerticalAlignment="Center" />
+                                </Grid>
+                                
+                                <ScrollViewer MaxHeight="180" VerticalScrollBarVisibility="Auto">
+                                    <ItemsControl x:Name="InstalledFilesItemsControl">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate DataType="{x:Type local:InstalledPluginFileInfo}">
+                                                <Border BorderBrush="#F1F5F9" BorderThickness="0,0,0,1" Padding="0,6">
+                                                    <Grid>
+                                                        <Grid.ColumnDefinitions>
+                                                            <ColumnDefinition Width="*" />
+                                                            <ColumnDefinition Width="Auto" />
+                                                        </Grid.ColumnDefinitions>
+                                                        <StackPanel>
+                                                            <TextBlock Text="{Binding FileName}" FontWeight="SemiBold" FontSize="12" />
+                                                            <TextBlock FontSize="11" Foreground="{StaticResource MutedBrush}">
+                                                                <Run Text="{Binding FileSize, StringFormat='{}{0:N0} bytes'}" /><Run Text=" • " /><Run Text="{Binding LastModified, StringFormat='{}{0:yyyy-MM-dd HH:mm}'}" />
+                                                            </TextBlock>
+                                                        </StackPanel>
+                                                        <Button Grid.Column="1" Style="{StaticResource DangerOutlineButton}" Content="Delete" Click="DeleteInstalledFileButton_Click" Tag="{Binding}" Padding="8,4" FontSize="11" VerticalAlignment="Center" />
+                                                    </Grid>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </ScrollViewer>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Activity Log Card -->
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Text="SignalRGB Activity" FontSize="18" FontWeight="SemiBold" />
+                                <TextBox x:Name="SignalRgbLogTextBox" Margin="0,12,0,0" Height="190" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" BorderThickness="0" Background="#F7F9FC" Padding="12" FontFamily="Consolas" FontSize="12" Foreground="#334155" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </Grid>
+            </ScrollViewer>
+        </Grid>
+
+        <!-- Footer -->
+        <Border Grid.Row="2" BorderBrush="#E2E8F0" BorderThickness="0,1,0,0" Background="White" Padding="30,12">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <StackPanel>
-                    <TextBlock x:Name="ProductNameTextBlock" Text="Wobkey Crush 80 Firmware Installer" Foreground="White" FontSize="26" FontWeight="SemiBold" />
-                    <TextBlock Text="Safe, configurable USB OTA updates for patched firmware" Foreground="#AFC0E8" FontSize="14" Margin="0,6,0,0" />
-                </StackPanel>
-                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Button x:Name="OpenFolderButton" Style="{StaticResource SecondaryButton}" Content="Open installer folder" Click="OpenFolderButton_Click" Margin="0,0,10,0" />
-                    <Button x:Name="ReloadButton" Style="{StaticResource SecondaryButton}" Content="Reload catalog" Click="ReloadButton_Click" />
-                </StackPanel>
+                <TextBlock x:Name="FooterNoticeTextBlock" Text="Recovery: if a firmware update fails, reconnect by USB and flash a valid firmware image again." Foreground="{StaticResource MutedBrush}" FontSize="12" />
+                <TextBlock Grid.Column="1" Text="Wobkey Crush 80 Community" Foreground="#94A3B8" FontSize="12" />
             </Grid>
-        </Border>
-
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-            <Grid Margin="30,26">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="1.25*" />
-                    <ColumnDefinition Width="18" />
-                    <ColumnDefinition Width="0.9*" />
-                </Grid.ColumnDefinitions>
-
-                <StackPanel Grid.Column="0">
-                    <Border Style="{StaticResource Card}" Margin="0,0,0,18">
-                        <StackPanel>
-                            <TextBlock Text="1  Choose firmware" FontSize="18" FontWeight="SemiBold" />
-                            <TextBlock Text="Releases are loaded from firmware-catalog.json beside the app." Foreground="{StaticResource MutedBrush}" Margin="0,5,0,16" />
-                            <ComboBox x:Name="FirmwareComboBox" Height="42" Padding="10,5" DisplayMemberPath="DisplayName" SelectionChanged="FirmwareComboBox_SelectionChanged" />
-                            <TextBlock x:Name="FirmwareDescriptionTextBlock" TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" Margin="0,14,0,16" />
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto" />
-                                    <ColumnDefinition Width="*" />
-                                </Grid.ColumnDefinitions>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                </Grid.RowDefinitions>
-                                <TextBlock Text="Format" Foreground="{StaticResource MutedBrush}" Margin="0,3,22,3" />
-                                <TextBlock x:Name="FormatTextBlock" Grid.Column="1" Margin="0,3" />
-                                <TextBlock Grid.Row="1" Text="Payload" Foreground="{StaticResource MutedBrush}" Margin="0,3,22,3" />
-                                <TextBlock x:Name="SizeTextBlock" Grid.Row="1" Grid.Column="1" Margin="0,3" />
-                                <TextBlock Grid.Row="2" Text="Integrity" Foreground="{StaticResource MutedBrush}" Margin="0,3,22,3" />
-                                <TextBlock x:Name="IntegrityTextBlock" Grid.Row="2" Grid.Column="1" Margin="0,3" />
-                                <TextBlock Grid.Row="3" Text="File" Foreground="{StaticResource MutedBrush}" Margin="0,3,22,3" />
-                                <TextBlock x:Name="FileTextBlock" Grid.Row="3" Grid.Column="1" TextTrimming="CharacterEllipsis" ToolTip="{Binding Text, RelativeSource={RelativeSource Self}}" Margin="0,3" />
-                            </Grid>
-                        </StackPanel>
-                    </Border>
-
-                    <Border Style="{StaticResource Card}">
-                        <StackPanel>
-                            <TextBlock Text="3  Install update" FontSize="18" FontWeight="SemiBold" />
-                            <TextBlock x:Name="SupportMessageTextBlock" TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" Margin="0,5,0,14" />
-                            <CheckBox x:Name="ConfirmationCheckBox" Content="I understand that interrupting a firmware update may require recovery." Click="ConfirmationCheckBox_Click" Margin="0,0,0,16" />
-                            <ProgressBar x:Name="FlashProgressBar" Height="10" Minimum="0" Maximum="100" Value="0" Foreground="{StaticResource AccentBrush}" Background="#E8ECF5" />
-                            <Grid Margin="0,8,0,18">
-                                <TextBlock x:Name="ProgressStatusTextBlock" Text="Ready" Foreground="{StaticResource MutedBrush}" />
-                                <TextBlock x:Name="ProgressPercentTextBlock" Text="0%" HorizontalAlignment="Right" FontWeight="SemiBold" />
-                            </Grid>
-                            <StackPanel Orientation="Horizontal">
-                                <Button x:Name="FlashButton" Style="{StaticResource PrimaryButton}" Content="Install firmware" Click="FlashButton_Click" IsEnabled="False" MinWidth="160" />
-                                <Button x:Name="CancelButton" Style="{StaticResource SecondaryButton}" Content="Cancel" Click="CancelButton_Click" Visibility="Collapsed" Margin="10,0,0,0" />
-                            </StackPanel>
-                        </StackPanel>
-                    </Border>
-                </StackPanel>
-
-                <StackPanel Grid.Column="2">
-                    <Border Style="{StaticResource Card}" Margin="0,0,0,18">
-                        <StackPanel>
-                            <TextBlock Text="2  Connect keyboard" FontSize="18" FontWeight="SemiBold" />
-                            <TextBlock Text="The OTA interface is matched by VID, PID, and HID usage page." Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" Margin="0,5,0,18" />
-                            <Border x:Name="DeviceStatusBorder" Background="#FFF5E6" BorderBrush="#FED7AA" BorderThickness="1" CornerRadius="8" Padding="14">
-                                <StackPanel>
-                                    <TextBlock x:Name="DeviceStatusTextBlock" Text="Searching for keyboard…" FontWeight="SemiBold" />
-                                    <TextBlock x:Name="DeviceDetailsTextBlock" Text="Connect with a USB cable." TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" Margin="0,4,0,0" />
-                                </StackPanel>
-                            </Border>
-                            <Button x:Name="RefreshButton" Style="{StaticResource SecondaryButton}" Content="Refresh device" Click="RefreshButton_Click" Margin="0,14,0,0" HorizontalAlignment="Left" />
-                        </StackPanel>
-                    </Border>
-
-                    <Border Style="{StaticResource Card}">
-                        <StackPanel>
-                            <TextBlock Text="Activity" FontSize="18" FontWeight="SemiBold" />
-                            <TextBox x:Name="LogTextBox" Margin="0,12,0,0" Height="235" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" BorderThickness="0" Background="#F7F9FC" Padding="12" FontFamily="Consolas" FontSize="12" Foreground="#334155" />
-                        </StackPanel>
-                    </Border>
-                </StackPanel>
-            </Grid>
-        </ScrollViewer>
-
-        <Border Grid.Row="2" BorderBrush="#E2E8F0" BorderThickness="0,1,0,0" Background="White" Padding="30,12">
-            <TextBlock Text="Recovery: if an update fails, reconnect by USB and flash a valid firmware image again." Foreground="{StaticResource MutedBrush}" FontSize="12" />
         </Border>
     </Grid>
 </Window>

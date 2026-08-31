@@ -35,5 +35,51 @@
       "sha256": "54b7acd0f4a52692a9da38be8d769f09194bcc44d73490fdcd9675051476c279",
       "recommended": false
     }
+  ],
+  "plugins": [
+    {
+      "id": "crush80-wired-v2",
+      "name": "Wobkey Crush 80 (Wired) V2",
+      "version": "2.0",
+      "targetMode": "Wired USB (PID 0x5055)",
+      "file": "SignalRGB/WobkeyCrush80_v2.js",
+      "destinationFile": "WobkeyCrush80_v2.js",
+      "description": "Recommended wired plugin. Dynamically updates canvas hue without overriding the keyboard's active effect mode.",
+      "sha256": "4d2a865b80a7767e0f77c3efcdbd1ed6f9594952ee0b9980ce29aa4807c8897f",
+      "recommended": true
+    },
+    {
+      "id": "crush80-wireless-v2",
+      "name": "Wobkey Crush 80 (Wireless) V2",
+      "version": "2.0",
+      "targetMode": "2.4G Wireless Dongle (PID 0x5088)",
+      "file": "SignalRGB/WobkeyCrush80Wireless_v2.js",
+      "destinationFile": "WobkeyCrush80Wireless_v2.js",
+      "description": "Recommended wireless plugin for 2.4G dongle. Dynamically updates canvas hue without overriding the keyboard's active effect mode.",
+      "sha256": "2d3610a7e86198545fab6945b1cf3ebf708c2f7bce1a8d76369de56528ba06f1",
+      "recommended": true
+    },
+    {
+      "id": "crush80-wired-v1",
+      "name": "Wobkey Crush 80 (Wired) V1",
+      "version": "1.0",
+      "targetMode": "Wired USB (PID 0x5055)",
+      "file": "SignalRGB/WobkeyCrush80.js",
+      "destinationFile": "WobkeyCrush80.js",
+      "description": "Legacy wired plugin. Sets keyboard to solid-colour static effect mode and syncs averaged canvas color.",
+      "sha256": "705dfd39192246f01157eccb103ed10da7ff9e3aa967780721dea0017b39ed0a",
+      "recommended": false
+    },
+    {
+      "id": "crush80-wireless-v1",
+      "name": "Wobkey Crush 80 (Wireless) V1",
+      "version": "1.0",
+      "targetMode": "2.4G Wireless Dongle (PID 0x5088)",
+      "file": "SignalRGB/WobkeyCrush80Wireless.js",
+      "destinationFile": "WobkeyCrush80Wireless.js",
+      "description": "Legacy wireless plugin for 2.4G dongle. Sets keyboard to solid-colour static effect mode and syncs averaged canvas color.",
+      "sha256": "a3cbaca3f981deffea2b9ecbdff5b8c58adafc85da369a914dd7f7a1722bd377",
+      "recommended": false
+    }
   ]
 }
