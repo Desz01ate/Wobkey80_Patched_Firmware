@@ -1,0 +1,39 @@
+{
+  "productName": "Wobkey Crush 80 Firmware Installer",
+  "supportMessage": "Use a direct wired USB connection. Do not unplug the keyboard until the installer reports completion.",
+  "devices": [
+    {
+      "id": "crush80-wired",
+      "name": "Wobkey Crush 80 (Wired USB)",
+      "vendorId": "0x320F",
+      "productId": "0x5055",
+      "usagePage": "0xFFEF",
+      "reportId": 5,
+      "startTimeoutSeconds": 5,
+      "packetTimeoutSeconds": 10,
+      "finalTimeoutSeconds": 10
+    }
+  ],
+  "firmware": [
+    {
+      "id": "crush80-v106-patched",
+      "targetId": "crush80-wired",
+      "name": "Patched firmware",
+      "version": "1.06",
+      "file": "firmware/v2_patched.bin",
+      "description": "Latest patched release. Includes the vendor's wireless stability update and fixes VIA hue control.",
+      "sha256": "1c3d3970cd8430133db1ac7e722749f059cf3a20390c59f18b00d03ddd238561",
+      "recommended": true
+    },
+    {
+      "id": "crush80-v104-patched",
+      "targetId": "crush80-wired",
+      "name": "Patched firmware",
+      "version": "1.04",
+      "file": "firmware/firmware_patched.bin",
+      "description": "Legacy patched release for restoring the original 1.04 firmware while retaining the VIA hue fix.",
+      "sha256": "54b7acd0f4a52692a9da38be8d769f09194bcc44d73490fdcd9675051476c279",
+      "recommended": false
+    }
+  ]
+}
