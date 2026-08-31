@@ -11,13 +11,17 @@
         <ApplicationManifest>app.manifest</ApplicationManifest>
         <Version>1.0.0</Version>
         <Authors>Wobkey Crush 80 Community</Authors>
-        <Description>Configurable USB OTA firmware installer for the Wobkey Crush 80.</Description>
+        <Description>Configurable USB OTA firmware installer and SignalRGB plugin manager for the Wobkey Crush 80.</Description>
     </PropertyGroup>
 
     <ItemGroup>
         <None Update="firmware-catalog.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
         <None Include="..\..\..\firmware\v2_patched.bin" Link="firmware\v2_patched.bin" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
         <None Include="..\..\..\firmware\firmware_patched.bin" Link="firmware\firmware_patched.bin" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+        <None Include="..\..\..\SignalRGB\WobkeyCrush80.js" Link="SignalRGB\WobkeyCrush80.js" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+        <None Include="..\..\..\SignalRGB\WobkeyCrush80_v2.js" Link="SignalRGB\WobkeyCrush80_v2.js" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+        <None Include="..\..\..\SignalRGB\WobkeyCrush80Wireless.js" Link="SignalRGB\WobkeyCrush80Wireless.js" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+        <None Include="..\..\..\SignalRGB\WobkeyCrush80Wireless_v2.js" Link="SignalRGB\WobkeyCrush80Wireless_v2.js" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
     </ItemGroup>
 
 </Project>

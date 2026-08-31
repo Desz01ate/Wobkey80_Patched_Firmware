@@ -10,6 +10,7 @@ public sealed class InstallerCatalog
     public string SupportMessage { get; init; } = "Keep the keyboard connected by USB during the update.";
     public List<DeviceTarget> Devices { get; init; } = [];
     public List<FirmwareRelease> Firmware { get; init; } = [];
+    public List<SignalRgbPluginInfo> Plugins { get; init; } = [];
 }
 
 public sealed class DeviceTarget
@@ -54,20 +55,59 @@ public sealed class FirmwareRelease
     public string DisplayName => Recommended ? $"{Name} {Version} (Recommended)" : $"{Name} {Version}";
 }
 
+public sealed class SignalRgbPluginInfo
+{
+    public required string Id { get; init; }
+    public required string Name { get; init; }
+    public required string Version { get; init; }
+    public required string File { get; init; }
+    public string DestinationFile { get; init; } = "";
+    public string TargetMode { get; init; } = "";
+    public string Description { get; init; } = "";
+    public string? Sha256 { get; init; }
+    public bool Recommended { get; init; }
+
+    public string EffectiveDestinationFile =>
+        string.IsNullOrWhiteSpace(DestinationFile) ? Path.GetFileName(File) : DestinationFile;
+
+    public string DisplayName => Recommended ? $"{Name} (Recommended)" : Name;
+}
+
 public sealed record LoadedCatalog(InstallerCatalog Catalog, string BaseDirectory)
 {
     public DeviceTarget TargetFor(FirmwareRelease release) =>
         Catalog.Devices.SingleOrDefault(device => string.Equals(device.Id, release.TargetId, StringComparison.OrdinalIgnoreCase))
         ?? throw new InvalidDataException($"Firmware '{release.Id}' refers to unknown target '{release.TargetId}'.");
 
-    public string ResolveFirmwarePath(FirmwareRelease release)
+    public string ResolveFirmwarePath(FirmwareRelease release) => ResolvePath(release.File);
+
+    public string ResolvePluginPath(SignalRgbPluginInfo plugin) => ResolvePath(plugin.File);
+
+    private string ResolvePath(string relativeOrAbsolutePath)
     {
-        if (Path.IsPathRooted(release.File))
+        if (Path.IsPathRooted(relativeOrAbsolutePath))
         {
-            return Path.GetFullPath(release.File);
+            return Path.GetFullPath(relativeOrAbsolutePath);
         }
 
-        return Path.GetFullPath(Path.Combine(BaseDirectory, release.File));
+        var candidate = Path.GetFullPath(Path.Combine(BaseDirectory, relativeOrAbsolutePath));
+        if (File.Exists(candidate))
+        {
+            return candidate;
+        }
+
+        var current = new DirectoryInfo(BaseDirectory);
+        while (current != null)
+        {
+            var testPath = Path.Combine(current.FullName, relativeOrAbsolutePath);
+            if (File.Exists(testPath))
+            {
+                return Path.GetFullPath(testPath);
+            }
+            current = current.Parent;
+        }
+
+        return candidate;
     }
 }
 
@@ -141,8 +181,15 @@ public static class CatalogLoader
                 throw new InvalidDataException($"Firmware '{release.Id}' does not specify a file.");
             }
         }
+        EnsureUnique(catalog.Plugins.Select(plugin => plugin.Id), "plugin");
+        foreach (var plugin in catalog.Plugins)
+        {
+            if (string.IsNullOrWhiteSpace(plugin.File))
+            {
+                throw new InvalidDataException($"Plugin '{plugin.Id}' does not specify a file.");
+            }
+        }
     }
-
     private static void EnsureUnique(IEnumerable<string> ids, string itemType)
     {
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
