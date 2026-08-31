@@ -1,0 +1,66 @@
+name: Build tagged installer
+
+on:
+  push:
+    tags:
+      - "**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: installer-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  PROJECT: installer/Crush80FirmwareInstaller/Crush80FirmwareInstaller/Crush80FirmwareInstaller.csproj
+  PUBLISH_DIR: artifacts/Crush80FirmwareInstaller-win-x64
+
+jobs:
+  build-installer:
+    name: Build Windows installer
+    runs-on: windows-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install .NET 10 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore installer
+        shell: pwsh
+        run: dotnet restore $env:PROJECT --runtime win-x64
+
+      - name: Publish self-contained installer
+        shell: pwsh
+        run: >-
+          dotnet publish $env:PROJECT
+          --configuration Release
+          --runtime win-x64
+          --self-contained true
+          --no-restore
+          --output $env:PUBLISH_DIR
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:DebugType=None
+          -p:DebugSymbols=false
+          -p:InformationalVersion=$env:GITHUB_REF_NAME
+
+      - name: Set artifact name
+        id: metadata
+        shell: pwsh
+        run: |
+          $safeTag = $env:GITHUB_REF_NAME -replace '[^A-Za-z0-9._-]', '-'
+          "artifact_name=Crush80FirmwareInstaller-$safeTag-win-x64" >> $env:GITHUB_OUTPUT
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.metadata.outputs.artifact_name }}
+          path: ${{ env.PUBLISH_DIR }}
+          if-no-files-found: error
+          retention-days: 30

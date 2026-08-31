@@ -15,9 +15,9 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <None Update="firmware-catalog.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
-        <None Include="..\..\..\firmware\v2_patched.bin" Link="firmware\v2_patched.bin" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
-        <None Include="..\..\..\firmware\firmware_patched.bin" Link="firmware\firmware_patched.bin" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+        <None Update="firmware-catalog.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+        <None Include="..\..\..\firmware\v2_patched.bin" Link="firmware\v2_patched.bin" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
+        <None Include="..\..\..\firmware\firmware_patched.bin" Link="firmware\firmware_patched.bin" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" ExcludeFromSingleFile="true" />
     </ItemGroup>
 
 </Project>
